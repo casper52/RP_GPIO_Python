@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 from websocket import create_connection
-import RPi.GPIO as GPIO
 from gpiozero import Button
 from time import sleep, time
-from signal import pause
+
 
 
 # 라즈베리파이 serial number 가져오기
@@ -24,21 +23,44 @@ def getserial():
 # serial number를 메시지로 보내기
 def sendSerialNum():
     userID = getserial()
+
     ws.send("{\"fromDevice\":\"" + userID + "\"}")
     print(userID)
-    sleep(5)
+    return True;
 
 
 # 실행
 # connect
-ws = create_connection("ws://10.10.10.95:8080/name")
+ws = create_connection("ws://10.10.10.87:8080/name")
 print("connecting....")
 
 button = Button(21)
 
-while True:
-    print(Button)
-    button.wait_for_press()
-    button.when_pressed = sendSerialNum()
+beforeSend = False
+count = 0
+
+def pressCheck():
+    print("press check")
+    global beforeSend, count
+
+    while True:
+        print("-----------------------" + str(count))
+
+        button.wait_for_active(1)   #1초 간격으로 버튼 대기 활성화
+
+        # 버튼 대기 상태임과 동시에 count가 0이상일 때 메시지를 보내고 count값을 -2로 변경
+        if button.is_active and count >= 0:
+            sendSerialNum()
+            count = -2
+
+        # count가 0보다 작을 때 값을 1씩 증가, count값을 0이상으로 변경 시킨다
+        else:
+            count = count + 1
+            sleep(1)
+            continue
 
 
+        print(str(count)  + " :::: " + str(button))
+
+
+pressCheck()
